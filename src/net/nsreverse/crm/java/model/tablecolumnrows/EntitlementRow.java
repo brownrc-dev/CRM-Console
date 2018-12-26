@@ -1,24 +1,24 @@
 package net.nsreverse.crm.java.model.tablecolumnrows;
 
-import javafx.beans.property.SimpleBooleanProperty;
-
 public class EntitlementRow {
-    private SimpleBooleanProperty isEntitled;
-    private SimpleBooleanProperty isDisabled;
+    private Boolean isEntitled;
+    private Boolean isDisabled;
     private String entitlementName;
+    private int entitlement;
 
-    public EntitlementRow(SimpleBooleanProperty isEntitled, SimpleBooleanProperty isDisabled, String entitlementName) {
+    public EntitlementRow(boolean isEntitled, boolean isDisabled, String entitlementName, int entitlement) {
         this.isEntitled = isEntitled;
         this.isDisabled = isDisabled;
         this.entitlementName = entitlementName;
+        this.entitlement = entitlement;
     }
 
-    public SimpleBooleanProperty isEntitled() {
+    public Boolean isEntitled() {
         return isEntitled;
     }
 
-    public void setEntitled(SimpleBooleanProperty entitled) {
-        isEntitled = entitled;
+    public void setEntitled(boolean entitled) {
+        this.isEntitled = entitled;
     }
 
     public String getEntitlementName() {
@@ -29,11 +29,19 @@ public class EntitlementRow {
         this.entitlementName = entitlementName;
     }
 
-    public SimpleBooleanProperty isDisabled() {
+    public Boolean isDisabled() {
         return isDisabled;
     }
 
-    public void setDisabled(SimpleBooleanProperty disabled) {
-        isDisabled = disabled;
+    public void setDisabled(boolean disabled) {
+        this.isDisabled = disabled;
+    }
+
+    public int getEntitlement() {
+        return entitlement;
+    }
+
+    public void setEntitlement(int entitlement) {
+        this.entitlement = entitlement;
     }
 }

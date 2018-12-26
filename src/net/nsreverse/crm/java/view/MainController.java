@@ -3,7 +3,6 @@ package net.nsreverse.crm.java.view;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -11,7 +10,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -26,7 +24,11 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-public class MainController implements AddInteractionController.Delegate {
+import net.nsreverse.crm.java.model.tablecolumnrows.cellfactories.EntitlementOwnedValueFactory;
+import net.nsreverse.crm.java.model.tablecolumnrows.cellfactories.EntitlementDisabledValueFactory;
+
+public class MainController implements AddInteractionController.Delegate,
+                                       EntitlementDisabledValueFactory.Delegate {
     private static String TAG = MainController.class.getSimpleName();
 
     @FXML private TextField accountIdTextField;
@@ -42,11 +44,12 @@ public class MainController implements AddInteractionController.Delegate {
     @FXML private TableView<InteractionAlertRow> customerAlertsTableView;
     @FXML private TableColumn<InteractionAlertRow, String> customerAlertsColumn;
     @FXML private TableView<EntitlementRow> entitlementsTableView;
-    @FXML private TableColumn<EntitlementRow, SimpleBooleanProperty> customerIsEntitledColumn;
-    @FXML private TableColumn<EntitlementRow, SimpleBooleanProperty> customerIsDisabledColumn;
+    @FXML private TableColumn<EntitlementRow, CheckBox> customerIsEntitledColumn;
+    @FXML private TableColumn<EntitlementRow, CheckBox> customerIsDisabledColumn;
     @FXML private TableColumn<EntitlementRow, String> entitlementNameTableColumn;
 
     private JSONObject currentAccount;
+
 
     @FXML private void initialize() {
 
@@ -193,22 +196,22 @@ public class MainController implements AddInteractionController.Delegate {
                     if (entitlementsArray.length() > 0) {
                         for (Object o : entitlementsArray) {
                             if ((int)o == 1) {
-                                entitlementList.add(new EntitlementRow(new SimpleBooleanProperty(true), new SimpleBooleanProperty(false), "Product/Service 1"));
+                                entitlementList.add(new EntitlementRow(true, false, "Product/Service 1", 1));
                             }
                             else if ((int)o == 11) {
-                                entitlementList.add(new EntitlementRow(new SimpleBooleanProperty(true), new SimpleBooleanProperty(true), "Product/Service 1"));
+                                entitlementList.add(new EntitlementRow(true, true, "Product/Service 1", 11));
                             }
                             else if ((int)o == 2) {
-                                entitlementList.add(new EntitlementRow(new SimpleBooleanProperty(true), new SimpleBooleanProperty(false), "Product/Service 2"));
+                                entitlementList.add(new EntitlementRow(true, false, "Product/Service 2", 2));
                             }
                             else if ((int)o == 12) {
-                                entitlementList.add(new EntitlementRow(new SimpleBooleanProperty(true), new SimpleBooleanProperty(true), "Product/Service 2"));
+                                entitlementList.add(new EntitlementRow(true, true, "Product/Service 2", 12));
                             }
                             else if ((int)o == 3) {
-                                entitlementList.add(new EntitlementRow(new SimpleBooleanProperty(true), new SimpleBooleanProperty(false), "Product/Service 3"));
+                                entitlementList.add(new EntitlementRow(true, false, "Product/Service 3", 3));
                             }
                             else if ((int)o == 13) {
-                                entitlementList.add(new EntitlementRow(new SimpleBooleanProperty(true), new SimpleBooleanProperty(true), "Product/Service 3"));
+                                entitlementList.add(new EntitlementRow(true, true, "Product/Service 3", 13));
                             }
                         }
                     }
@@ -218,10 +221,8 @@ public class MainController implements AddInteractionController.Delegate {
                         customerInfoValueColumn.setCellValueFactory(new PropertyValueFactory<>("mvalue"));
                         customerInteractionsColumn.setCellValueFactory(new PropertyValueFactory<>("data"));
                         customerAlertsColumn.setCellValueFactory(new PropertyValueFactory<>("data"));
-                        customerIsEntitledColumn.setCellFactory(column -> new CheckBoxTableCell<>());
-                        customerIsEntitledColumn.setCellValueFactory(new PropertyValueFactory<>("isEntitled"));
-                        customerIsDisabledColumn.setCellFactory(column -> new CheckBoxTableCell<>());
-                        customerIsDisabledColumn.setCellValueFactory(new PropertyValueFactory<>("isDisabled"));
+                        customerIsEntitledColumn.setCellValueFactory(new EntitlementOwnedValueFactory());
+                        customerIsDisabledColumn.setCellValueFactory(new EntitlementDisabledValueFactory(this));
                         entitlementNameTableColumn.setCellValueFactory(new PropertyValueFactory<>("entitlementName"));
 
                         customerInfoTableView.setItems(infoList);
@@ -291,6 +292,7 @@ public class MainController implements AddInteractionController.Delegate {
             Socket socket = IO.socket(ApplicationContext.socketConnectionString);
 
             socket.on(Socket.EVENT_CONNECT, listener -> {
+                if (ApplicationContext.loggingEnabled) Logger.i(TAG, "Socket has connected.");
                 socket.emit("performUpdateNativeClient", currentAccount.getString("_id"), currentAccount);
                 socket.disconnect();
             });
@@ -307,5 +309,29 @@ public class MainController implements AddInteractionController.Delegate {
         finally {
             loadCustomerInformation(currentAccount.getString("_id") + " ");
         }
+    }
+
+    @Override
+    public void checkBoxStatusChanged(int entitlement) {
+        JSONArray entitlementsArray = currentAccount.getJSONArray("entitlements");
+
+        if (entitlement > 10) {
+            for (int i = 0; i < entitlementsArray.length(); i++) {
+                if (entitlement % 10 == (int)entitlementsArray.get(i)) {
+                    entitlementsArray.put(i, entitlement);
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < entitlementsArray.length(); i++) {
+                if (entitlement + 10 == (int)entitlementsArray.get(i)) {
+                    entitlementsArray.put(i, entitlement);
+                }
+            }
+        }
+
+        System.out.println(entitlement);
+
+        syncAccount();
     }
 }
